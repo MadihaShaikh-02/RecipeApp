@@ -48,7 +48,7 @@ const LoginScreen = ({ navigation }) => {
       >
         <View style={styles.inner}>
           <Text style={styles.header}>Login</Text>
-          <Ionicons style={styles.headerIcon} name="person-circle-outline" size={34} color="black" />
+          <Ionicons style={styles.headerIcon} name="person-circle-outline" size={44} color="black" />
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Username</Text>
             <TextInput
@@ -95,14 +95,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   header: {
-    fontSize: 24,
+    fontSize: 34,
     fontWeight: 'bold',
     marginBottom: 24,
+    color: '#000',
     textAlign: 'center',
+    
   },
   headerIcon: {
     alignSelf: 'center',
     marginBottom: 24,
+    color:'#ffd858',
+    
   },
   inputContainer: {
     marginBottom: 20,
@@ -140,7 +144,8 @@ const styles = StyleSheet.create({
   },
   registerText: {
     fontSize: 16,
-    color: '#007bff',
+    color: '#000',
+    fontWeight: 'bold',
   },
 });
 
