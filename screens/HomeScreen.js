@@ -7,26 +7,39 @@ import {
   TextInput,
   FlatList,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import RecipeCard from "../components/RecipeCard";
+import ToastContainer from "../components/ToastContainer";
 
 const HomeScreen = ({ navigation }) => {
   const [search, setSearch] = useState("");
   const [recipes, setRecipes] = useState([]);
   const [filteredRecipes, setFilteredRecipes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
+        await delay(2000);
         const existingRecipes = await AsyncStorage.getItem("recipes");
         const recipes = existingRecipes ? JSON.parse(existingRecipes) : [];
         setRecipes(recipes);
         setFilteredRecipes(recipes);
       } catch (error) {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Error fetching recipes. Please try again later.",
+        });
         console.error("Error fetching recipes:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -52,6 +65,11 @@ const HomeScreen = ({ navigation }) => {
       setRecipes(recipes);
       setFilteredRecipes(recipes);
     } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Error refreshing recipes. Please try again later.",
+      });
       console.error("Error refreshing recipes:", error);
     } finally {
       setRefreshing(false);
@@ -81,7 +99,9 @@ const HomeScreen = ({ navigation }) => {
         value={search}
         onChangeText={setSearch}
       />
-      {filteredRecipes.length === 0 ? (
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" style={styles.loading} />
+      ) : filteredRecipes.length === 0 ? (
         <Text style={styles.noRecipesText}>No recipes found.</Text>
       ) : (
         <FlatList
@@ -96,6 +116,7 @@ const HomeScreen = ({ navigation }) => {
           }
         />
       )}
+      <ToastContainer />
     </View>
   );
 };
@@ -148,6 +169,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
     color: "#666",
+  },
+  loading: {
+    marginTop: 20,
   },
 });
 
