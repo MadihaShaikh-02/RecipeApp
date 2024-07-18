@@ -77,7 +77,7 @@ const HomeScreen = ({ navigation }) => {
         {loading ? (
           <ActivityIndicator
             size="large"
-            color="#0000"
+            color="#000000"
             style={styles.loading}
           />
         ) : filteredRecipes.length === 0 ? (
