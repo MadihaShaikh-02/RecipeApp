@@ -12,7 +12,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import RecipeCard from "../components/RecipeCard";
-import ToastContainer from "../components/ToastContainer";
 
 const HomeScreen = ({ navigation }) => {
   const [search, setSearch] = useState("");
@@ -20,31 +19,29 @@ const HomeScreen = ({ navigation }) => {
   const [filteredRecipes, setFilteredRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+  const fetchRecipes = async () => {
+    try {
+      await delay(2000);
+      const existingRecipes = await AsyncStorage.getItem("recipes");
+      const recipes = existingRecipes ? JSON.parse(existingRecipes) : [];
+      setRecipes(recipes);
+      setFilteredRecipes(recipes);
+    } catch (error) {
+      console.error("Error fetching recipes:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchRecipes = async () => {
-      try {
-        await delay(2000);
-        const existingRecipes = await AsyncStorage.getItem("recipes");
-        const recipes = existingRecipes ? JSON.parse(existingRecipes) : [];
-        setRecipes(recipes);
-        setFilteredRecipes(recipes);
-      } catch (error) {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Error fetching recipes. Please try again later.",
-        });
-        console.error("Error fetching recipes:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const unsubscribe = navigation.addListener("focus", () => {
+      fetchRecipes();
+    });
 
-    fetchRecipes();
-  }, []);
+    return unsubscribe;
+  }, [navigation]);
 
   useEffect(() => {
     const filtered = recipes.filter((recipe) =>
@@ -60,16 +57,8 @@ const HomeScreen = ({ navigation }) => {
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      const existingRecipes = await AsyncStorage.getItem("recipes");
-      const recipes = existingRecipes ? JSON.parse(existingRecipes) : [];
-      setRecipes(recipes);
-      setFilteredRecipes(recipes);
+      await fetchRecipes();
     } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Error refreshing recipes. Please try again later.",
-      });
       console.error("Error refreshing recipes:", error);
     } finally {
       setRefreshing(false);
@@ -78,45 +67,41 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.navbar}>
-        <Text style={styles.navbarTitle}>Home</Text>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => navigation.navigate("Add")}
-        >
-          <Ionicons name="add-outline" size={24} color="black" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => navigation.navigate("Contact")}
-        >
-          <Ionicons name="call-outline" size={24} color="black" />
-        </TouchableOpacity>
-      </View>
-      <TextInput
-        style={styles.searchBox}
-        placeholder="Search..."
-        value={search}
-        onChangeText={setSearch}
-      />
-      {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" style={styles.loading} />
-      ) : filteredRecipes.length === 0 ? (
-        <Text style={styles.noRecipesText}>No recipes found.</Text>
-      ) : (
-        <FlatList
-          data={filteredRecipes}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          style={{ width: "100%" }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
+      <View style={styles.contentContainer}>
+        <TextInput
+          style={styles.searchBox}
+          placeholder="Search..."
+          value={search}
+          onChangeText={setSearch}
         />
-      )}
-      <ToastContainer />
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#0000"
+            style={styles.loading}
+          />
+        ) : filteredRecipes.length === 0 ? (
+          <Text style={styles.noRecipesText}>No recipes found.</Text>
+        ) : (
+          <FlatList
+            data={filteredRecipes}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={2}
+            columnWrapperStyle={styles.row}
+            style={{ width: "100%" }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          />
+        )}
+      </View>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate("Add")}
+      >
+        <Ionicons name="add-outline" size={24} color="white" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -126,23 +111,26 @@ HomeScreen.navigationOptions = {
 };
 
 const styles = StyleSheet.create({
-  navbar: {
-    height: 60,
+  container: {
+    flex: 1,
     backgroundColor: "white",
-    justifyContent: "space-between",
+  },
+  contentContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 60,
+  },
+  fab: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "black",
+    width: 50,
+    height: 50,
+    borderRadius: 30,
+    justifyContent: "center",
     alignItems: "center",
-    flexDirection: "row",
-    paddingHorizontal: 15,
-    paddingTop: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-  },
-  navbarTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  iconButton: {
-    padding: 5,
+    elevation: 8,
   },
   searchBox: {
     height: 40,
@@ -151,25 +139,15 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 10,
     marginHorizontal: 5,
-    marginTop: 10,
+    marginTop: 40,
     backgroundColor: "white",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "white",
-    paddingHorizontal: 20,
   },
   row: {
     flex: 1,
     justifyContent: "space-between",
     marginBottom: 20,
   },
-  noRecipesText: {
-    alignSelf: "center",
-    marginTop: 20,
-    fontSize: 16,
-    color: "#666",
-  },
+
   loading: {
     marginTop: 20,
   },
